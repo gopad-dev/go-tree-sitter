@@ -6,7 +6,7 @@
       "parser.c",
       "scanner.cc"
     ],
-    "reference": "v0.19.0",
+    "reference": "v0.20.5",
     "revision": "b6667bed364733c8a8f8e5973749f86cfa04ba2a"
   },
   {
@@ -15,7 +15,7 @@
     "files": [
       "parser.c"
     ],
-    "reference": "v0.20.2",
+    "reference": "v0.20.8",
     "revision": "7175a6dd5fc1cee660dce6fe23f6043d75af424a"
   },
   {
@@ -35,7 +35,7 @@
       "parser.c",
       "scanner.cc"
     ],
-    "reference": "v0.20.0",
+    "reference": "v0.20.5",
     "revision": "f44509141e7e483323d2ec178f2d2e6c0fc041c1"
   },
   {
@@ -45,7 +45,7 @@
       "parser.c",
       "scanner.c"
     ],
-    "reference": "v0.19.0",
+    "reference": "v0.20.0",
     "revision": "9668e889161358d18a558f68f1614b6edde34029"
   },
   {
@@ -56,7 +56,7 @@
       "scanner.c"
     ],
     "reference": "main",
-    "revision": "61843e3beebf19417e4fede4e8be4df1084317ad"
+    "revision": "cdfe1a8594fe5be45c883a385ab543acc646d018"
   },
   {
     "language": "dockerfile",
@@ -74,7 +74,7 @@
       "parser.c",
       "scanner.cc"
     ],
-    "reference": "v0.1.0",
+    "reference": "v0.1.1",
     "revision": "869dff3ceb8823ca4b17ca33b663667c8e41e8ba"
   },
   {
@@ -84,7 +84,7 @@
       "parser.c",
       "scanner.cc"
     ],
-    "reference": "v5.6.3",
+    "reference": "v5.7.0",
     "revision": "cce0e5938e7779f86cf8bf445eadf7df4b88229d"
   },
   {
@@ -94,7 +94,7 @@
       "parser.c"
     ],
     "reference": "master",
-    "revision": "64457ea6b73ef5422ed1687178d4545c3e91334a"
+    "revision": "fd577c4358c28cbcb6748bbf65354cc85f1cf7a4"
   },
   {
     "language": "groovy",
@@ -104,7 +104,7 @@
       "scanner.c"
     ],
     "reference": "main",
-    "revision": "235009aad0f580211fc12014bb0846c3910130c1"
+    "revision": "3c25d1ce6c1eb9da34215060372792dc9f439b0c"
   },
   {
     "language": "hcl",
@@ -114,7 +114,7 @@
       "scanner.c"
     ],
     "reference": "main",
-    "revision": "b5539065432c08e4118eb3ee7c94902fdda85708"
+    "revision": "e936d3fef8bac884661472dce71ad82284761eb1"
   },
   {
     "language": "html",
@@ -124,7 +124,7 @@
       "scanner.cc",
       "tag.h"
     ],
-    "reference": "v0.19.0",
+    "reference": "v0.20.1",
     "revision": "d93af487cc75120c89257195e6be46c999c6ba18"
   },
   {
@@ -143,7 +143,7 @@
       "parser.c",
       "scanner.c"
     ],
-    "reference": "v0.20.1",
+    "reference": "v0.20.4",
     "revision": "f1e5a09b8d02f8209a68249c93f0ad647b228e6e"
   },
   {
@@ -154,7 +154,7 @@
       "scanner.c"
     ],
     "reference": "main",
-    "revision": "cce9073807c6c1da81ce658d683fdac2878e5b57"
+    "revision": "4e909d6cc9ac96b4eaecb3fb538eaca48e9e9ee9"
   },
   {
     "language": "lua",
@@ -164,7 +164,7 @@
       "scanner.c"
     ],
     "reference": "master",
-    "revision": "0e860f697901c9b610104eb61d3812755d5211fc"
+    "revision": "5429f4ed6865c43fbfb07001ad9bfe33ec6e96db"
   },
   {
     "language": "ocaml",
@@ -174,7 +174,7 @@
       "scanner.cc",
       "scanner.h"
     ],
-    "reference": "v0.20.1",
+    "reference": "v0.21.0",
     "revision": "de07323343946c32759933cb3b7c78e821098cad"
   },
   {
@@ -184,8 +184,8 @@
       "parser.c",
       "scanner.cc"
     ],
-    "reference": "v0.19.0",
-    "revision": "3ef0d5c253affe4b7fb46d9505db6df143db565a"
+    "reference": "v0.22.2",
+    "revision": "ad414fa5497328e96ef992d80896f19c77584f7c"
   },
   {
     "language": "protobuf",
@@ -203,7 +203,7 @@
       "parser.c",
       "scanner.cc"
     ],
-    "reference": "v0.20.0",
+    "reference": "v0.21.0",
     "revision": "2b9e9e0d231d5dd9f491d47f704817baee7d5af0"
   },
   {
@@ -213,7 +213,7 @@
       "parser.c",
       "scanner.cc"
     ],
-    "reference": "v0.19.0",
+    "reference": "v0.20.1",
     "revision": "fe6a2d634da0e16b11b5aa255cc3df568a4572fd"
   },
   {
@@ -223,7 +223,7 @@
       "parser.c",
       "scanner.c"
     ],
-    "reference": "v0.20.3",
+    "reference": "v0.20.4",
     "revision": "0431a2c60828731f27491ee9fdefe25e250ce9c9"
   },
   {
@@ -234,7 +234,7 @@
       "scanner.c",
       "stack.h"
     ],
-    "reference": "v0.19.1",
+    "reference": "v0.20.3",
     "revision": "918f0fb948405181707a1772cab639f2d278d384"
   },
   {
@@ -249,7 +249,7 @@
       "uthash.h",
       "vc_vector.h"
     ],
-    "reference": "v0.10.1",
+    "reference": "v0.11.0",
     "revision": "84c90ee15f851e1541c25c86e8a4338f5b4d5af2"
   },
   {
@@ -269,7 +269,7 @@
       "parser.c",
       "scanner.c"
     ],
-    "reference": "v0.20.3",
+    "reference": "v0.20.6",
     "revision": "c604297f8197b468026f2ea32119935887e01c67"
   },
   {
@@ -282,5 +282,23 @@
     ],
     "reference": "v0.5.0",
     "revision": "6129a83eeec7d6070b1c0567ec7ce3509ead607c"
+  },
+  {
+    "language": "json",
+    "url": "https://github.com/tree-sitter/tree-sitter-json",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "v0.20.2",
+    "revision": "3b129203f4b72d532f58e72c5310c0a7db3b8e6d"
+  },
+  {
+    "language": "regex",
+    "url": "https://github.com/tree-sitter/tree-sitter-regex",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "v0.20.0",
+    "revision": "2354482d7e2e8f8ff33c1ef6c8aa5690410fbc96"
   }
 ]
