@@ -234,6 +234,8 @@ func (s *UpdateService) downloadGrammar(ctx context.Context, g *Grammar) {
 		s.downloadOcaml(ctx, g)
 	case "typescript":
 		s.downloadTypescript(ctx, g)
+	case "markdown":
+		s.downloadMarkdown(ctx, g)
 	case "yaml":
 		s.downloadYaml(ctx, g)
 	default:
@@ -383,6 +385,51 @@ func (s *UpdateService) downloadTypescript(ctx context.Context, g *Grammar) {
 				map[string]string{
 					`<tree_sitter/parser.h>`:   `"parser.h"`,
 					`"../../common/scanner.h"`: `"scanner.h"`,
+				},
+			)
+		}
+	}
+}
+
+// markdown is special as it contains 2 different grammars
+func (s *UpdateService) downloadMarkdown(ctx context.Context, g *Grammar) {
+	url := g.ContentURL()
+
+	langs := []string{"tree-sitter-markdown-inline", "tree-sitter-markdown"}
+	targetLangs := []string{"markdown-inline", "markdown"}
+	for i, lang := range langs {
+		targetLang := targetLangs[i]
+		s.makeDir(ctx, fmt.Sprintf("%s/%s", g.Language, targetLang))
+
+		s.downloadFile(
+			ctx,
+			fmt.Sprintf("%s/%s/%s/src/tree_sitter/parser.h", url, g.Revision, lang),
+			fmt.Sprintf("%s/%s/parser.h", g.Language, targetLang),
+			nil,
+		)
+
+		s.downloadFile(
+			ctx,
+			fmt.Sprintf("%s/%s/%s/src/tree_sitter/alloc.h", url, g.Revision, lang),
+			fmt.Sprintf("%s/%s/alloc.h", g.Language, targetLang),
+			nil,
+		)
+
+		s.downloadFile(
+			ctx,
+			fmt.Sprintf("%s/%s/%s/src/tree_sitter/array.h", url, g.Revision, lang),
+			fmt.Sprintf("%s/%s/array.h", g.Language, targetLang),
+			nil,
+		)
+
+		for _, f := range g.Files {
+			s.downloadFile(
+				ctx,
+				fmt.Sprintf("%s/%s/%s/src/%s", url, g.Revision, lang, f),
+				fmt.Sprintf("%s/%s/%s", g.Language, targetLang, f),
+				map[string]string{
+					`<tree_sitter/parser.h>`: `"parser.h"`,
+					`"tree_sitter/parser.h"`: `"parser.h"`,
 				},
 			)
 		}

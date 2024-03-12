@@ -97,6 +97,33 @@
     "revision": "fd577c4358c28cbcb6748bbf65354cc85f1cf7a4"
   },
   {
+    "language": "go-mod",
+    "url": "https://github.com/camdencheek/tree-sitter-go-mod",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "v1.0.2",
+    "revision": "bbe2fe3be4b87e06a613e685250f473d2267f430"
+  },
+  {
+    "language": "go-sum",
+    "url": "https://github.com/tree-sitter-grammars/tree-sitter-go-sum",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "v1.0.0",
+    "revision": "e2ac513b2240c7ff1069ae33b2df29ce90777c11"
+  },
+  {
+    "language": "go-work",
+    "url": "https://github.com/d1y/tree-sitter-go-work",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "main",
+    "revision": "a2a4b99b53b3740855ff33f0b54cab0bb4ce6f45"
+  },
+  {
     "language": "groovy",
     "url": "https://github.com/murtaza64/tree-sitter-groovy",
     "files": [
@@ -300,5 +327,33 @@
     ],
     "reference": "v0.20.0",
     "revision": "2354482d7e2e8f8ff33c1ef6c8aa5690410fbc96"
+  },
+  {
+    "language": "gitignore",
+    "url": "https://github.com/shunsambongi/tree-sitter-gitignore",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "main",
+    "revision": "f4685bf11ac466dd278449bcfe5fd014e94aa504"
+  },
+  {
+    "language": "gitattributes",
+    "url": "https://github.com/mtoohey31/tree-sitter-gitattributes",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "main",
+    "revision": "deb04fdbff485310ee5bac74ddc6ab624a602b7b"
+  },
+  {
+    "language": "markdown",
+    "url": "https://github.com/tree-sitter-grammars/tree-sitter-markdown",
+    "files": [
+      "parser.c",
+      "scanner.c"
+    ],
+    "reference": "update",
+    "revision": "af4a875d264a3ac10aad24e2b6be4b63af0ecc3f"
   }
 ]
