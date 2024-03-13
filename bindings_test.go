@@ -114,7 +114,7 @@ func TestTree(t *testing.T) {
 
 	descendantNode := n.NamedDescendantForPointRange(Point{Row: 0, Column: 5}, Point{Row: 0, Column: 11})
 	assert.NotNil(descendantNode, "Descendant node was nil")
-	assert.Equal("(3 + 3)", descendantNode.Content(newText))
+	assert.Equal("(3 + 3)", descendantNode.Content())
 }
 
 func TestErrorNodes(t *testing.T) {
@@ -379,7 +379,7 @@ func testCaptures(t *testing.T, body, sq string, expected []string) {
 		}
 
 		for _, c := range m.Captures {
-			actual = append(actual, c.Node.Content([]byte(body)))
+			actual = append(actual, c.Node.Content())
 		}
 	}
 
@@ -604,7 +604,8 @@ func TestCursorKeepsQuery(t *testing.T) {
 	parser := NewParser()
 	parser.SetLanguage(getTestGrammar())
 
-	tree := parser.Parse(nil, source)
+	tree, err := parser.ParseCtx(context.Background(), nil, source)
+	assert.NoError(t, err)
 	root := tree.RootNode()
 
 	for i := 0; i < 100; i++ {
