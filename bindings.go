@@ -1139,9 +1139,9 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 			}
 		case "any-of?":
 			expectedCaptureName := q.CaptureNameForId(steps[1].ValueId)
-			var expectedValues []string
+			var values []string
 			for _, step := range steps[2:] {
-				expectedValues = append(expectedValues, q.StringValueForId(step.ValueId))
+				values = append(values, q.StringValueForId(step.ValueId))
 			}
 
 			for _, c := range qm.Captures {
@@ -1150,17 +1150,30 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 					continue
 				}
 
-				if !slices.Contains(expectedValues, c.Node.Type()) {
+				if !slices.Contains(values, c.Node.Content()) {
 					matchedAll = false
 					break
 				}
 			}
 
 		case "set!":
-			expectedCaptureName := q.CaptureNameForId(steps[1].ValueId)
-			expectedValue := q.StringValueForId(steps[2].ValueId)
+			key := q.StringValueForId(steps[1].ValueId)
+			value := q.StringValueForId(steps[2].ValueId)
 
-			qm.Properties[expectedCaptureName] = expectedValue
+			qm.Properties[key] = value
+
+		case "set-lang-from-info-string!":
+			expectedCaptureName := q.CaptureNameForId(steps[1].ValueId)
+
+			for _, c := range qm.Captures {
+				captureName := q.CaptureNameForId(c.Index)
+				if expectedCaptureName != captureName {
+					continue
+				}
+
+				qm.Properties["injection.language"] = c.Node.Content()
+				break
+			}
 		}
 		if !matchedAll {
 			break
