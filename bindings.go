@@ -448,6 +448,24 @@ func (n Node) String() string {
 	return C.GoString(ptr)
 }
 
+func (n Node) PrettyString() string {
+	return n.prettyString(0)
+}
+
+func (n Node) prettyString(indent int) string {
+	str := fmt.Sprintf("%s%s: [%d,%d] - [%d,%d]", strings.Repeat("  ", indent), n.Type(), n.StartPoint().Row, n.StartPoint().Column, n.EndPoint().Row, n.EndPoint().Column)
+
+	for i := range int(n.ChildCount()) {
+		child := n.Child(i)
+		if !child.IsNamed() {
+			continue
+		}
+		str += "\n" + child.prettyString(indent+1)
+	}
+
+	return str
+}
+
 // Equal checks if two nodes are identical.
 func (n Node) Equal(other *Node) bool {
 	return bool(C.ts_node_eq(n.c, other.c))
