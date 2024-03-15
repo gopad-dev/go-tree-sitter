@@ -171,7 +171,7 @@
       "scanner.c"
     ],
     "reference": "v0.20.4",
-    "revision": "f1e5a09b8d02f8209a68249c93f0ad647b228e6e"
+    "revision": "de1e682289a417354df5b4437a3e4f92e0722a0f"
   },
   {
     "language": "kotlin",
@@ -370,5 +370,15 @@
     ],
     "reference": "master",
     "revision": "aefcc2813392eb6ffe509aa0fc8b4e9b57413ee1"
+  },
+  {
+    "language": "templ",
+    "url": "https://github.com/vrischmann/tree-sitter-templ",
+    "files": [
+      "parser.c",
+      "scanner.c"
+    ],
+    "reference": "master",
+    "revision": "592faa3186ef857c92e4bd1c31d73c07a4a334db"
   }
 ]

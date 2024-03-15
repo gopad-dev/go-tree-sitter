@@ -849,7 +849,7 @@ func NewQuery(pattern []byte, lang *Language) (*Query, error) {
 				if steps[2].Type != QueryPredicateStepTypeString {
 					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[2].ValueId))
 				}
-			case "set!", "is?", "is-not?":
+			case "set!":
 				if len(steps) < 3 || len(steps) > 4 {
 					return nil, fmt.Errorf("wrong number of arguments to `#%s` predicate. Expected 1 or 2, got %d", operator, len(steps)-2)
 				}
@@ -857,6 +857,16 @@ func NewQuery(pattern []byte, lang *Language) (*Query, error) {
 					return nil, fmt.Errorf("first argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[1].ValueId))
 				}
 				if len(steps) > 2 && steps[2].Type != QueryPredicateStepTypeString {
+					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[2].ValueId))
+				}
+			case "is?", "is-not?":
+				if len(steps) != 3 {
+					return nil, fmt.Errorf("wrong number of arguments to `#%s` predicate. Expected 1, got %d", operator, len(steps)-2)
+				}
+				if steps[1].Type != QueryPredicateStepTypeString {
+					return nil, fmt.Errorf("first argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[1].ValueId))
+				}
+				if len(steps) > 2 && steps[2].Type != QueryPredicateStepTypeString && steps[2].Type != QueryPredicateStepTypeDone {
 					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[2].ValueId))
 				}
 			}
