@@ -380,5 +380,23 @@
     ],
     "reference": "master",
     "revision": "592faa3186ef857c92e4bd1c31d73c07a4a334db"
+  },
+  {
+    "language": "common-lisp",
+    "url": "https://github.com/tree-sitter-grammars/tree-sitter-commonlisp",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "master",
+    "revision": "cf10fc38bc24faf0549d59217ff37c789973dfdc"
+  },
+  {
+    "language": "tree-sitter-query",
+    "url": "https://github.com/tree-sitter-grammars/tree-sitter-query",
+    "files": [
+      "parser.c"
+    ],
+    "reference": "v0.2.1",
+    "revision": "2e31ca2771f6042b0e4e0c41a6290014a9e1face"
   }
 ]
