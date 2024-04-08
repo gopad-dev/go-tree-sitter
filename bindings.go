@@ -226,6 +226,30 @@ type Point struct {
 	Column uint32
 }
 
+func (p Point) Equal(p2 Point) bool {
+	return p.Row == p2.Row && p.Column == p2.Column
+}
+
+func (p Point) Before(p2 Point) bool {
+	if p.Row < p2.Row {
+		return true
+	}
+	if p.Row == p2.Row && p.Column < p2.Column {
+		return true
+	}
+	return false
+}
+
+func (p Point) After(p2 Point) bool {
+	if p.Row > p2.Row {
+		return true
+	}
+	if p.Row == p2.Row && p.Column > p2.Column {
+		return true
+	}
+	return false
+}
+
 type Range struct {
 	StartPoint Point
 	EndPoint   Point
@@ -584,6 +608,19 @@ func (n Node) Edit(i EditInput) {
 // Content returns node's source code from input as a string
 func (n Node) Content() string {
 	return string(n.t.input[n.StartByte():n.EndByte()])
+}
+
+func (n Node) DescendantForPointRange(start Point, end Point) *Node {
+	cStartPoint := C.TSPoint{
+		row:    C.uint32_t(start.Row),
+		column: C.uint32_t(start.Column),
+	}
+	cEndPoint := C.TSPoint{
+		row:    C.uint32_t(end.Row),
+		column: C.uint32_t(end.Column),
+	}
+	nn := C.ts_node_descendant_for_point_range(n.c, cStartPoint, cEndPoint)
+	return n.t.cachedNode(nn)
 }
 
 func (n Node) NamedDescendantForPointRange(start Point, end Point) *Node {
