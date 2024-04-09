@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"regexp"
 	"runtime"
 	"slices"
@@ -292,6 +293,15 @@ type Tree struct {
 	cache map[C.TSNode]*Node
 }
 
+func (t *Tree) Print() string {
+	node := t.RootNode()
+	if node == nil {
+		return ""
+	}
+
+	return node.Print()
+}
+
 // Copy returns a new copy of a tree
 func (t *Tree) Copy() *Tree {
 	nt := t.p.newTree(C.ts_tree_copy(t.c))
@@ -308,6 +318,15 @@ func (t *Tree) Input() []byte {
 func (t *Tree) RootNode() *Node {
 	ptr := C.ts_tree_root_node(t.c)
 	return t.cachedNode(ptr)
+}
+
+func (t *Tree) Language() *Language {
+	ptr := C.ts_tree_language(t.c)
+	return NewLanguage(unsafe.Pointer(ptr))
+}
+
+func (t *Tree) PrintDotGraph(f *os.File) {
+	C.ts_tree_print_dot_graph(t.c, C.int(f.Fd()))
 }
 
 func (t *Tree) cachedNode(ptr C.TSNode) *Node {
@@ -455,14 +474,29 @@ func (n Node) EndPoint() Point {
 	}
 }
 
+// Type returns the node's type as a string.
+func (n Node) Type() string {
+	return C.GoString(C.ts_node_type(n.c))
+}
+
 // Symbol returns the node's type as a Symbol.
 func (n Node) Symbol() Symbol {
 	return C.ts_node_symbol(n.c)
 }
 
-// Type returns the node's type as a string.
-func (n Node) Type() string {
-	return C.GoString(C.ts_node_type(n.c))
+func (n Node) Language() *Language {
+	ptr := C.ts_node_language(n.c)
+	return NewLanguage(unsafe.Pointer(ptr))
+}
+
+// GrammarType returns the node's type as it appears in the grammar ignoring aliases.
+func (n Node) GrammarType() string {
+	return C.GoString(C.ts_node_grammar_type(n.c))
+}
+
+// GrammarSymbol returns the node's type as a numerical id as it appears in the grammar ignoring aliases.
+func (n Node) GrammarSymbol() Symbol {
+	return C.ts_node_symbol(n.c)
 }
 
 // String returns an S-expression representing the node as a string.
@@ -472,19 +506,19 @@ func (n Node) String() string {
 	return C.GoString(ptr)
 }
 
-func (n Node) PrettyString() string {
-	return n.prettyString(0)
+func (n Node) Print() string {
+	return n.print(0)
 }
 
-func (n Node) prettyString(indent int) string {
-	str := fmt.Sprintf("%s%s: [%d,%d] - [%d,%d]", strings.Repeat("  ", indent), n.Type(), n.StartPoint().Row, n.StartPoint().Column, n.EndPoint().Row, n.EndPoint().Column)
+func (n Node) print(indent int) string {
+	str := fmt.Sprintf("%s%s - %s [%d,%d] - [%d,%d]", strings.Repeat("  ", indent), n.Type(), n.GrammarType(), n.StartPoint().Row, n.StartPoint().Column, n.EndPoint().Row, n.EndPoint().Column)
 
-	for i := range int(n.ChildCount()) {
+	for i := range n.ChildCount() {
 		child := n.Child(i)
 		if !child.IsNamed() {
 			continue
 		}
-		str += "\n" + child.prettyString(indent+1)
+		str += "\n" + child.print(indent+1)
 	}
 
 	return str
@@ -554,13 +588,13 @@ func (n Node) NamedChild(idx int) *Node {
 }
 
 // ChildCount returns the node's number of children.
-func (n Node) ChildCount() uint32 {
-	return uint32(C.ts_node_child_count(n.c))
+func (n Node) ChildCount() int {
+	return int(C.ts_node_child_count(n.c))
 }
 
 // NamedChildCount returns the node's number of *named* children.
-func (n Node) NamedChildCount() uint32 {
-	return uint32(C.ts_node_named_child_count(n.c))
+func (n Node) NamedChildCount() int {
+	return int(C.ts_node_named_child_count(n.c))
 }
 
 // ChildByFieldName returns the node's child with the given field name.
@@ -568,6 +602,12 @@ func (n Node) ChildByFieldName(name string) *Node {
 	str := C.CString(name)
 	defer C.free(unsafe.Pointer(str))
 	nn := C.ts_node_child_by_field_name(n.c, str, C.uint32_t(len(name)))
+	return n.t.cachedNode(nn)
+}
+
+// ChildByField returns the node's child with the given field id.
+func (n Node) ChildByField(idx int) *Node {
+	nn := C.ts_node_child_by_field_id(n.c, C.ushort(idx))
 	return n.t.cachedNode(nn)
 }
 
@@ -600,6 +640,20 @@ func (n Node) PrevNamedSibling() *Node {
 	return n.t.cachedNode(nn)
 }
 
+func (n Node) FirstChildForByte(b uint32) *Node {
+	nn := C.ts_node_first_child_for_byte(n.c, C.uint32_t(b))
+	return n.t.cachedNode(nn)
+}
+
+func (n Node) FirstNamedChildForByte(b uint32) *Node {
+	nn := C.ts_node_first_named_child_for_byte(n.c, C.uint32_t(b))
+	return n.t.cachedNode(nn)
+}
+
+func (n Node) DescendantCount() int {
+	return int(C.ts_node_descendant_count(n.c))
+}
+
 // Edit the node to keep it in-sync with source code that has been edited.
 func (n Node) Edit(i EditInput) {
 	C.ts_node_edit(&n.c, i.c())
@@ -610,7 +664,7 @@ func (n Node) Content() string {
 	return string(n.t.input[n.StartByte():n.EndByte()])
 }
 
-func (n Node) DescendantForPointRange(start Point, end Point) *Node {
+func (n Node) DescendantForRange(start Point, end Point) *Node {
 	cStartPoint := C.TSPoint{
 		row:    C.uint32_t(start.Row),
 		column: C.uint32_t(start.Column),
@@ -623,7 +677,7 @@ func (n Node) DescendantForPointRange(start Point, end Point) *Node {
 	return n.t.cachedNode(nn)
 }
 
-func (n Node) NamedDescendantForPointRange(start Point, end Point) *Node {
+func (n Node) NamedDescendantForRange(start Point, end Point) *Node {
 	cStartPoint := C.TSPoint{
 		row:    C.uint32_t(start.Row),
 		column: C.uint32_t(start.Column),
@@ -671,6 +725,12 @@ func (c *TreeCursor) Close() {
 	c.isClosed = true
 }
 
+// Copy creates a new tree cursor that is a copy of the original tree cursor.
+func (c *TreeCursor) Copy() *TreeCursor {
+	cc := C.ts_tree_cursor_copy(c.c)
+	return &TreeCursor{c: &cc, t: c.t}
+}
+
 // Reset re-initializes a tree cursor to start at a different node.
 func (c *TreeCursor) Reset(n *Node) {
 	c.t = n.t
@@ -690,6 +750,13 @@ func (c *TreeCursor) CurrentFieldName() string {
 	return C.GoString(C.ts_tree_cursor_current_field_name(c.c))
 }
 
+// CurrentFieldID gets the field id of the tree cursor's current node.
+//
+// This returns 0 if the current node doesn't have a field.
+func (c *TreeCursor) CurrentFieldID() uint32 {
+	return uint32(C.ts_tree_cursor_current_field_id(c.c))
+}
+
 // GoToParent moves the cursor to the parent of its current node.
 //
 // This returns `true` if the cursor successfully moved, and returns `false`
@@ -706,12 +773,47 @@ func (c *TreeCursor) GoToNextSibling() bool {
 	return bool(C.ts_tree_cursor_goto_next_sibling(c.c))
 }
 
+// GoToPreviousSibling moves the cursor to the previous sibling of its current node.
+//
+// This returns `true` if the cursor successfully moved, and returns `false`
+// if there was no previous sibling node.
+func (c *TreeCursor) GoToPreviousSibling() bool {
+	return bool(C.ts_tree_cursor_goto_previous_sibling(c.c))
+}
+
 // GoToFirstChild moves the cursor to the first child of its current node.
 //
 // This returns `true` if the cursor successfully moved, and returns `false`
 // if there were no children.
 func (c *TreeCursor) GoToFirstChild() bool {
 	return bool(C.ts_tree_cursor_goto_first_child(c.c))
+}
+
+// GoToLastChild moves the cursor to the last child of its current node.
+//
+// This returns `true` if the cursor successfully moved, and returns `false`
+// if there were no children.
+func (c *TreeCursor) GoToLastChild() bool {
+	return bool(C.ts_tree_cursor_goto_last_child(c.c))
+}
+
+// GoToDescendant moves the cursor to the node that is the nth descendant of
+// the original node that the cursor was constructed with, where
+// zero represents the original node itself.
+func (c *TreeCursor) GoToDescendant(n int) {
+	C.ts_tree_cursor_goto_descendant(c.c, C.uint32_t(n))
+}
+
+// CurrentDescendantIndex returns the index of the cursor's current node out of all of the
+// descendants of the original node that the cursor was constructed with.
+func (c *TreeCursor) CurrentDescendantIndex() int {
+	return int(C.ts_tree_cursor_current_descendant_index(c.c))
+}
+
+// CursorCurrentDepth returns the depth of the cursor's current node relative to the original
+// node that the cursor was constructed with.
+func (c *TreeCursor) CursorCurrentDepth() int {
+	return int(C.ts_tree_cursor_current_depth(c.c))
 }
 
 // GoToFirstChildForByte moves the cursor to the first child of its current node
@@ -721,6 +823,18 @@ func (c *TreeCursor) GoToFirstChild() bool {
 // if no such child was found.
 func (c *TreeCursor) GoToFirstChildForByte(b uint32) int64 {
 	return int64(C.ts_tree_cursor_goto_first_child_for_byte(c.c, C.uint32_t(b)))
+}
+
+// GoToFirstChildForPoint moves the cursor to the first child of its current node
+// that extends beyond the given point.
+//
+// This returns the index of the child node if one was found, and returns -1
+// if no such child was found.
+func (c *TreeCursor) GoToFirstChildForPoint(p Point) int64 {
+	return int64(C.ts_tree_cursor_goto_first_child_for_point(c.c, C.TSPoint{
+		row:    C.uint32_t(p.Row),
+		column: C.uint32_t(p.Column),
+	}))
 }
 
 // QueryErrorType - value that indicates the type of QueryError.
@@ -867,44 +981,44 @@ func NewQuery(pattern []byte, lang *Language) (*Query, error) {
 				return nil, errors.New("predicate must begin with a literal value")
 			}
 
-			operator := q.StringValueForId(steps[0].ValueId)
+			operator := q.StringValueForID(steps[0].ValueID)
 			switch operator {
 			case "eq?", "not-eq?":
 				if len(steps) != 4 {
 					return nil, fmt.Errorf("wrong number of arguments to `#%s` predicate. Expected 2, got %d", operator, len(steps)-2)
 				}
 				if steps[1].Type != QueryPredicateStepTypeCapture {
-					return nil, fmt.Errorf("first argument of `#%s` predicate must be a capture. Got %s", operator, q.StringValueForId(steps[1].ValueId))
+					return nil, fmt.Errorf("first argument of `#%s` predicate must be a capture. Got %s", operator, q.StringValueForID(steps[1].ValueID))
 				}
 			case "match?", "not-match?":
 				if len(steps) != 4 {
 					return nil, fmt.Errorf("wrong number of arguments to `#%s` predicate. Expected 2, got %d", operator, len(steps)-2)
 				}
 				if steps[1].Type != QueryPredicateStepTypeCapture {
-					return nil, fmt.Errorf("first argument of `#%s` predicate must be a capture. Got %s", operator, q.StringValueForId(steps[1].ValueId))
+					return nil, fmt.Errorf("first argument of `#%s` predicate must be a capture. Got %s", operator, q.StringValueForID(steps[1].ValueID))
 				}
 				if steps[2].Type != QueryPredicateStepTypeString {
-					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[2].ValueId))
+					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[2].ValueID))
 				}
 			case "set!":
 				if len(steps) < 3 || len(steps) > 4 {
 					return nil, fmt.Errorf("wrong number of arguments to `#%s` predicate. Expected 1 or 2, got %d", operator, len(steps)-2)
 				}
 				if steps[1].Type != QueryPredicateStepTypeString {
-					return nil, fmt.Errorf("first argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[1].ValueId))
+					return nil, fmt.Errorf("first argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[1].ValueID))
 				}
 				if len(steps) > 2 && steps[2].Type != QueryPredicateStepTypeString {
-					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[2].ValueId))
+					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[2].ValueID))
 				}
 			case "is?", "is-not?":
 				if len(steps) != 3 {
 					return nil, fmt.Errorf("wrong number of arguments to `#%s` predicate. Expected 1, got %d", operator, len(steps)-2)
 				}
 				if steps[1].Type != QueryPredicateStepTypeString {
-					return nil, fmt.Errorf("first argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[1].ValueId))
+					return nil, fmt.Errorf("first argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[1].ValueID))
 				}
 				if len(steps) > 2 && steps[2].Type != QueryPredicateStepTypeString && steps[2].Type != QueryPredicateStepTypeDone {
-					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForId(steps[2].ValueId))
+					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[2].ValueID))
 				}
 			}
 		}
@@ -949,7 +1063,7 @@ const (
 
 type QueryPredicateStep struct {
 	Type    QueryPredicateStepType
-	ValueId uint32
+	ValueID uint32
 }
 
 func (q *Query) PredicatesForPattern(patternIndex uint32) [][]QueryPredicateStep {
@@ -963,20 +1077,20 @@ func (q *Query) PredicatesForPattern(patternIndex uint32) [][]QueryPredicateStep
 
 	for _, s := range cPredicateSteps {
 		stepType := QueryPredicateStepType(s._type)
-		valueId := uint32(s.value_id)
-		predicateSteps = append(predicateSteps, QueryPredicateStep{stepType, valueId})
+		valueID := uint32(s.value_id)
+		predicateSteps = append(predicateSteps, QueryPredicateStep{stepType, valueID})
 	}
 
 	return splitPredicates(predicateSteps)
 }
 
-func (q *Query) CaptureNameForId(id uint32) string {
+func (q *Query) CaptureNameForID(id uint32) string {
 	var length C.uint32_t
 	name := C.ts_query_capture_name_for_id(q.c, C.uint32_t(id), &length)
 	return C.GoStringN(name, C.int(length))
 }
 
-func (q *Query) StringValueForId(id uint32) string {
+func (q *Query) StringValueForID(id uint32) string {
 	var length C.uint32_t
 	value := C.ts_query_string_value_for_id(q.c, C.uint32_t(id), &length)
 	return C.GoStringN(value, C.int(length))
@@ -992,8 +1106,8 @@ const (
 	QuantifierOneOrMore
 )
 
-func (q *Query) CaptureQuantifierForId(id uint32, captureId uint32) Quantifier {
-	return Quantifier(C.ts_query_capture_quantifier_for_id(q.c, C.uint32_t(id), C.uint32_t(captureId)))
+func (q *Query) CaptureQuantifierForID(id uint32, captureID uint32) Quantifier {
+	return Quantifier(C.ts_query_capture_quantifier_for_id(q.c, C.uint32_t(id), C.uint32_t(captureID)))
 }
 
 // QueryCursor carries the state needed for processing the queries.
@@ -1120,21 +1234,21 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 		if len(steps) == 0 {
 			continue
 		}
-		operator := q.StringValueForId(steps[0].ValueId)
+		operator := q.StringValueForID(steps[0].ValueID)
 
 		switch operator {
 		case "eq?", "not-eq?":
 			isPositive := operator == "eq?"
 
-			expectedCaptureNameLeft := q.CaptureNameForId(steps[1].ValueId)
+			expectedCaptureNameLeft := q.CaptureNameForID(steps[1].ValueID)
 
 			if steps[2].Type == QueryPredicateStepTypeCapture {
-				expectedCaptureNameRight := q.CaptureNameForId(steps[2].ValueId)
+				expectedCaptureNameRight := q.CaptureNameForID(steps[2].ValueID)
 
 				var nodeLeft, nodeRight *Node
 
 				for _, c := range qm.Captures {
-					captureName := q.CaptureNameForId(c.Index)
+					captureName := q.CaptureNameForID(c.Index)
 
 					if captureName == expectedCaptureNameLeft {
 						nodeLeft = c.Node
@@ -1151,10 +1265,10 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 					}
 				}
 			} else {
-				expectedValueRight := q.StringValueForId(steps[2].ValueId)
+				expectedValueRight := q.StringValueForID(steps[2].ValueID)
 
 				for _, c := range qm.Captures {
-					captureName := q.CaptureNameForId(c.Index)
+					captureName := q.CaptureNameForID(c.Index)
 					if expectedCaptureNameLeft != captureName {
 						continue
 					}
@@ -1171,11 +1285,11 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 		case "match?", "not-match?":
 			isPositive := operator == "match?"
 
-			expectedCaptureName := q.CaptureNameForId(steps[1].ValueId)
-			regex := regexp.MustCompile(q.StringValueForId(steps[2].ValueId))
+			expectedCaptureName := q.CaptureNameForID(steps[1].ValueID)
+			regex := regexp.MustCompile(q.StringValueForID(steps[2].ValueID))
 
 			for _, c := range qm.Captures {
-				captureName := q.CaptureNameForId(c.Index)
+				captureName := q.CaptureNameForID(c.Index)
 				if expectedCaptureName != captureName {
 					continue
 				}
@@ -1188,11 +1302,11 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 		case "is?", "is-not?":
 			isPositive := operator == "is?"
 
-			expectedCaptureName := q.CaptureNameForId(steps[1].ValueId)
-			expectedValue := q.StringValueForId(steps[2].ValueId)
+			expectedCaptureName := q.CaptureNameForID(steps[1].ValueID)
+			expectedValue := q.StringValueForID(steps[2].ValueID)
 
 			for _, c := range qm.Captures {
-				captureName := q.CaptureNameForId(c.Index)
+				captureName := q.CaptureNameForID(c.Index)
 				if expectedCaptureName != captureName {
 					continue
 				}
@@ -1203,14 +1317,14 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 				}
 			}
 		case "any-of?":
-			expectedCaptureName := q.CaptureNameForId(steps[1].ValueId)
+			expectedCaptureName := q.CaptureNameForID(steps[1].ValueID)
 			var values []string
 			for _, step := range steps[2:] {
-				values = append(values, q.StringValueForId(step.ValueId))
+				values = append(values, q.StringValueForID(step.ValueID))
 			}
 
 			for _, c := range qm.Captures {
-				captureName := q.CaptureNameForId(c.Index)
+				captureName := q.CaptureNameForID(c.Index)
 				if expectedCaptureName != captureName {
 					continue
 				}
@@ -1222,16 +1336,16 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 			}
 
 		case "set!":
-			key := q.StringValueForId(steps[1].ValueId)
-			value := q.StringValueForId(steps[2].ValueId)
+			key := q.StringValueForID(steps[1].ValueID)
+			value := q.StringValueForID(steps[2].ValueID)
 
 			qm.Properties[key] = value
 
 		case "set-lang-from-info-string!":
-			expectedCaptureName := q.CaptureNameForId(steps[1].ValueId)
+			expectedCaptureName := q.CaptureNameForID(steps[1].ValueID)
 
 			for _, c := range qm.Captures {
-				captureName := q.CaptureNameForId(c.Index)
+				captureName := q.CaptureNameForID(c.Index)
 				if expectedCaptureName != captureName {
 					continue
 				}
