@@ -112,7 +112,7 @@ func TestTree(t *testing.T) {
 	assert.Equal("(expression (sum left: (expression (number)) right: (expression (expression (sum left: (expression (number)) right: (expression (number)))))))",
 		n.String())
 
-	descendantNode := n.NamedDescendantForPointRange(Point{Row: 0, Column: 5}, Point{Row: 0, Column: 11})
+	descendantNode := n.NamedDescendantForRange(Point{Row: 0, Column: 5}, Point{Row: 0, Column: 11})
 	assert.NotNil(descendantNode, "Descendant node was nil")
 	assert.Equal("(3 + 3)", descendantNode.Content())
 }

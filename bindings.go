@@ -511,8 +511,22 @@ func (n Node) Print() string {
 }
 
 func (n Node) print(indent int) string {
-	str := fmt.Sprintf("%s%s - %s [%d,%d] - [%d,%d]", strings.Repeat("  ", indent), n.Type(), n.GrammarType(), n.StartPoint().Row, n.StartPoint().Column, n.EndPoint().Row, n.EndPoint().Column)
-
+	str := fmt.Sprintf("%s%s [%d,%d] - [%d,%d]", strings.Repeat("  ", indent), n.Type(), n.StartPoint().Row, n.StartPoint().Column, n.EndPoint().Row, n.EndPoint().Column)
+	if n.IsMissing() {
+		str += " - Missing"
+	}
+	if n.IsExtra() {
+		str += " - Extra"
+	}
+	if n.IsError() {
+		str += " - Error"
+	}
+	if n.HasChanges() {
+		str += " - Changed"
+	}
+	if n.HasError() {
+		str += " - HasError"
+	}
 	for i := range n.ChildCount() {
 		child := n.Child(i)
 		if !child.IsNamed() {
