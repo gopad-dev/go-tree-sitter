@@ -105,13 +105,7 @@ func (p *Parser) ParseCtx(ctx context.Context, oldTree *Tree, content []byte) (*
 	close(parseComplete)
 	C.free(input)
 
-	t, err := p.convertTSTree(ctx, baseTree)
-	if err != nil {
-		return nil, err
-	}
-
-	t.input = content
-	return t, nil
+	return p.convertTSTree(ctx, baseTree, content)
 }
 
 // ParseInput produces new Tree by reading from a callback defined in input
@@ -128,16 +122,16 @@ func (p *Parser) ParseInput(oldTree *Tree, input Input) *Tree {
 // as it will avoid copying the data into []bytes
 // and faster access to edited part of the data
 func (p *Parser) ParseInputCtx(ctx context.Context, oldTree *Tree, input Input) (*Tree, error) {
-	var BaseTree *C.TSTree
+	var baseTree *C.TSTree
 	if oldTree != nil {
-		BaseTree = oldTree.c
+		baseTree = oldTree.c
 	}
 
 	funcID := readFuncs.register(input.Read)
-	BaseTree = C.call_ts_parser_parse(p.c, BaseTree, C.int(funcID), C.TSInputEncoding(input.Encoding))
+	baseTree = C.call_ts_parser_parse(p.c, baseTree, C.int(funcID), C.TSInputEncoding(input.Encoding))
 	readFuncs.unregister(funcID)
 
-	return p.convertTSTree(ctx, BaseTree)
+	return p.convertTSTree(ctx, baseTree, nil)
 }
 
 // convertTSTree converts the tree-sitter response into a *Tree or an error.
@@ -149,7 +143,7 @@ func (p *Parser) ParseInputCtx(ctx context.Context, oldTree *Tree, input Input) 
 //
 // We check for all those conditions if ther return value is nil.
 // see: https://github.com/tree-sitter/tree-sitter/blob/7890a29db0b186b7b21a0a95d99fa6c562b8316b/lib/include/tree_sitter/api.h#L209-L246
-func (p *Parser) convertTSTree(ctx context.Context, tsTree *C.TSTree) (*Tree, error) {
+func (p *Parser) convertTSTree(ctx context.Context, tsTree *C.TSTree, content []byte) (*Tree, error) {
 	if tsTree == nil {
 		if ctx.Err() != nil {
 			// reset cancellation flag so the parse can be re-used
@@ -165,7 +159,7 @@ func (p *Parser) convertTSTree(ctx context.Context, tsTree *C.TSTree) (*Tree, er
 		return nil, ErrOperationLimit
 	}
 
-	return p.newTree(tsTree), nil
+	return p.newTree(tsTree, content), nil
 }
 
 // OperationLimit returns the duration in microseconds that parsing is allowed to take
@@ -269,12 +263,16 @@ type BaseTree struct {
 
 // newTree creates a new tree object from a C pointer. The function will set a finalizer for the object,
 // thus no free is needed for it.
-func (p *Parser) newTree(c *C.TSTree) *Tree {
+func (p *Parser) newTree(c *C.TSTree, content []byte) *Tree {
 	base := &BaseTree{c: c}
 	runtime.SetFinalizer(base, (*BaseTree).Close)
 
-	newTree := &Tree{p: p, BaseTree: base, cache: make(map[C.TSNode]*Node)}
-	return newTree
+	return &Tree{
+		BaseTree: base,
+		p:        p,
+		input:    content,
+		cache:    make(map[C.TSNode]*Node),
+	}
 }
 
 // Tree represents the syntax tree of an entire source code file
@@ -304,9 +302,7 @@ func (t *Tree) Print() string {
 
 // Copy returns a new copy of a tree
 func (t *Tree) Copy() *Tree {
-	nt := t.p.newTree(C.ts_tree_copy(t.c))
-	nt.input = t.input
-	return nt
+	return t.p.newTree(C.ts_tree_copy(t.c), t.input)
 }
 
 // Input returns the input given to parse this tree

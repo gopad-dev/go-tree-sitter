@@ -1,7 +1,7 @@
 # go tree-sitter
 
-[![Build Status](https://github.com/smacker/go-tree-sitter/workflows/Test/badge.svg?branch=master)](https://github.com/smacker/go-tree-sitter/actions/workflows/test.yml?query=branch%3Amaster)
-[![GoDoc](https://godoc.org/github.com/smacker/go-tree-sitter?status.svg)](https://godoc.org/github.com/smacker/go-tree-sitter)
+[![Build Status](https://github.com/gopad-dev/go-tree-sitter/workflows/Test/badge.svg?branch=master)](https://github.com/gopad-dev/go-tree-sitter/actions/workflows/test.yml?query=branch%3Amaster)
+[![GoDoc](https://godoc.org/go.gopad.dev/go-tree-sitter?status.svg)](https://godoc.org/go.gopad.dev/go-tree-sitter)
 
 Golang bindings for [tree-sitter](https://github.com/tree-sitter/tree-sitter)
 
@@ -14,12 +14,13 @@ import (
 	"context"
 	"fmt"
 
-	sitter "github.com/smacker/go-tree-sitter"
-	"github.com/smacker/go-tree-sitter/javascript"
+	"go.gopad.dev/go-tree-sitter"
 )
 
+var lang *sitter.Language
+
 parser := sitter.NewParser()
-parser.SetLanguage(javascript.GetLanguage())
+parser.SetLanguage(lang)
 ```
 
 Parse some code:
@@ -42,19 +43,23 @@ fmt.Println(child.StartByte()) // 0
 fmt.Println(child.EndByte()) // 9
 ```
 
-### Custom grammars
+### Grammars
 
-This repository provides grammars for many common languages out of the box.
+This repository provides no grammars. You can add grammars via [purego](https://github.com/ebitengine/purego) as an example to reduce binary size.
 
-But if you need support for any other language you can keep it inside your own project or publish it as a separate repository to share with the community. 
+```go
+func GetLanguage() (*sitter.Language, error) {
+	lib, err := purego.Dlopen("/usr/lib/libtree-sitter-query.so", purego.RTLD_NOW|purego.RTLD_GLOBAL)
+	if err != nil {
+		return nil, err
+	}
 
-See explanation on how to create a grammar for go-tree-sitter [here](https://github.com/smacker/go-tree-sitter/issues/57).
+	var treeSitterQuery func() uintptr
+	purego.RegisterLibFunc(&treeSitterQuery, lib, "tree_sitter_query")
 
-Known external grammars:
-
-- [Salesforce grammars](https://github.com/aheber/tree-sitter-sfapex) - including Apex, SOQL, and SOSL languages.
-- [Ruby](https://github.com/shagabutdinov/go-tree-sitter-ruby) - Deprecated, grammar is provided by main repo instead
-- [Go Template](https://github.com/mrjosh/helm-ls/tree/master/internal/tree-sitter/gotemplate) - Used for helm
+	return sitter.NewLanguage(unsafe.Pointer(treeSitterQuery())), nil
+}
+```
 
 ### Editing
 
@@ -99,8 +104,6 @@ Similar to [Rust](https://github.com/tree-sitter/tree-sitter/tree/master/lib/bin
 - `eq?`, `not-eq?`
 - `match?`, `not-match?`
 
-Usage [example](./_examples/predicates/main.go):
-
 ```go
 func main() {
 	// Javascript code
@@ -115,7 +118,7 @@ func main() {
 	)`
 
 	// Parse source code
-	lang := javascript.GetLanguage()
+	var lang *sitter.Language
 	n, _ := sitter.ParseCtx(context.Background(), sourceCode, lang)
 	// Execute the query
 	q, _ := sitter.NewQuery([]byte(screamingSnakeCasePattern), lang)
@@ -127,8 +130,6 @@ func main() {
 		if !ok {
 			break
 		}
-		// Apply predicates filtering
-		m = qc.FilterPredicates(m, sourceCode)
 		for _, c := range m.Captures {
 			fmt.Println(c.Node.Content(sourceCode))
 		}
@@ -137,26 +138,4 @@ func main() {
 
 // Output of this program:
 // SCREAMING_SNAKE_CASE_CONST
-```
-
-## Development
-
-### Updating a grammar
-
-Check if any updates for vendored files are available:
-
-```
-go run _automation/main.go check-updates
-```
-
-Update vendor files:
-
-- open `_automation/grammars.json`
-- modify `reference` (for tagged grammars) or `revision` (for grammars from a branch)
-- run `go run _automation/main.go update <grammar-name>`
-
-It is also possible to update all grammars in one go using
-
-```
-go run _automation/main.go update-all
 ```
