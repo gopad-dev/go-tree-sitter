@@ -8,7 +8,7 @@ import (
 )
 
 func LoadLanguage(symbolName string, path string) (*Language, error) {
-	lib, err := purego.Dlopen(path, purego.RTLD_NOW)
+	lib, err := loadLib(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open language library: %w", err)
 	}
