@@ -1216,6 +1216,36 @@ func (qc *QueryCursor) NextMatch() (*QueryMatch, bool) {
 	}
 }
 
+func (qc *QueryCursor) NextCapture() (*QueryMatch, int, bool) {
+	var cqm C.TSQueryMatch
+	var cqi C.uint
+
+	for {
+		if ok := C.ts_query_cursor_next_capture(qc.c, &cqm, &cqi); !bool(ok) {
+			return nil, 0, false
+		}
+
+		qm := &QueryMatch{
+			ID:           uint32(cqm.id),
+			PatternIndex: uint16(cqm.pattern_index),
+			Properties:   make(map[string]string),
+		}
+
+		cqc := []C.TSQueryCapture(unsafe.Slice(cqm.captures, int(cqm.capture_count)))
+
+		for _, c := range cqc {
+			idx := uint32(c.index)
+			node := qc.t.cachedNode(c.node)
+			qm.Captures = append(qm.Captures, QueryCapture{Index: idx, Node: node})
+		}
+
+		if !qm.satisfiesTextPredicates(qc.q) {
+			continue
+		}
+		return qm, int(cqi), true
+	}
+}
+
 // Copied From: https://github.com/klothoplatform/go-tree-sitter/commit/e351b20167b26d515627a4a1a884528ede5fef79
 
 func splitPredicates(steps []QueryPredicateStep) [][]QueryPredicateStep {
