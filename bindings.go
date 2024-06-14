@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -334,7 +335,7 @@ func (t *Tree) cachedNode(ptr C.TSNode) *Node {
 		return n
 	}
 
-	n := &Node{ptr, t}
+	n := &Node{c: ptr, t: t}
 	t.cache[ptr] = n
 	return n
 }
@@ -1030,6 +1031,26 @@ func NewQuery(pattern []byte, lang *Language) (*Query, error) {
 				if len(steps) > 2 && steps[2].Type != QueryPredicateStepTypeString && steps[2].Type != QueryPredicateStepTypeDone {
 					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[2].ValueID))
 				}
+			case "offset!":
+				if len(steps) != 7 {
+					return nil, fmt.Errorf("wrong number of arguments to `#%s` predicate. Expected 5, got %d", operator, len(steps))
+				}
+
+				if steps[1].Type != QueryPredicateStepTypeCapture {
+					return nil, fmt.Errorf("first argument of `#%s` predicate must be a capture. Got %s", operator, q.StringValueForID(steps[1].ValueID))
+				}
+				if steps[2].Type != QueryPredicateStepTypeString {
+					return nil, fmt.Errorf("second argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[2].ValueID))
+				}
+				if steps[3].Type != QueryPredicateStepTypeString {
+					return nil, fmt.Errorf("third argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[3].ValueID))
+				}
+				if steps[4].Type != QueryPredicateStepTypeString {
+					return nil, fmt.Errorf("fourth argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[4].ValueID))
+				}
+				if steps[5].Type != QueryPredicateStepTypeString {
+					return nil, fmt.Errorf("fifth argument of `#%s` predicate must be a string. Got %s", operator, q.StringValueForID(steps[5].ValueID))
+				}
 			}
 		}
 	}
@@ -1173,6 +1194,26 @@ func (qc *QueryCursor) Close() {
 type QueryCapture struct {
 	Index uint32
 	Node  *Node
+
+	startRowOffset int
+	startColOffset int
+	endRowOffset   int
+	endColOffset   int
+}
+
+func (qc QueryCapture) StartPoint() Point {
+	p := qc.Node.StartPoint()
+	p.Row = uint32(int(p.Row) + qc.startRowOffset)
+	p.Column = uint32(int(p.Column) + qc.startColOffset)
+	return p
+}
+
+func (qc QueryCapture) EndPoint() Point {
+	p := qc.Node.EndPoint()
+	p.Row = uint32(int(p.Row) + qc.endRowOffset)
+	p.Column = uint32(int(p.Column) + qc.endColOffset)
+	return p
+
 }
 
 // QueryMatch - you can then iterate over the matches.
@@ -1392,6 +1433,25 @@ func (qm *QueryMatch) satisfiesTextPredicates(q *Query) bool {
 
 				qm.Properties["injection.language"] = c.Node.Content()
 				break
+			}
+		case "offset!":
+			expectedCaptureName := q.CaptureNameForID(steps[1].ValueID)
+
+			startRowOffset, _ := strconv.Atoi(q.StringValueForID(steps[2].ValueID))
+			startColumnOffset, _ := strconv.Atoi(q.StringValueForID(steps[3].ValueID))
+			endRowOffset, _ := strconv.Atoi(q.StringValueForID(steps[4].ValueID))
+			endColumnOffset, _ := strconv.Atoi(q.StringValueForID(steps[5].ValueID))
+
+			for i, c := range qm.Captures {
+				captureName := q.CaptureNameForID(c.Index)
+				if expectedCaptureName != captureName {
+					continue
+				}
+
+				qm.Captures[i].startRowOffset = startRowOffset
+				qm.Captures[i].startColOffset = startColumnOffset
+				qm.Captures[i].endRowOffset = endRowOffset
+				qm.Captures[i].endColOffset = endColumnOffset
 			}
 		}
 		if !matchedAll {
