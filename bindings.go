@@ -1076,6 +1076,10 @@ func (q *Query) PatternCount() uint32 {
 	return uint32(C.ts_query_pattern_count(q.c))
 }
 
+func (q *Query) PatternStartByte(patternIndex uint32) uint32 {
+	return uint32(C.ts_query_start_byte_for_pattern(q.c, C.uint32_t(patternIndex)))
+}
+
 func (q *Query) CaptureCount() uint32 {
 	return uint32(C.ts_query_capture_count(q.c))
 }
