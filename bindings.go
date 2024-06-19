@@ -293,12 +293,65 @@ type Tree struct {
 }
 
 func (t *Tree) Print() string {
-	node := t.RootNode()
-	if node == nil {
+	var indent int
+	var tree string
+
+	cursor := NewTreeCursor(t.RootNode())
+	for {
+		tree += formatNode(cursor, indent)
+
+		if cursor.GoToFirstChild() {
+			indent += 1
+			continue
+		}
+
+		if cursor.GoToNextSibling() {
+			continue
+		}
+
+		for {
+			if !cursor.GoToParent() {
+				return tree
+			}
+			indent -= 1
+
+			if cursor.GoToNextSibling() {
+				break
+			}
+		}
+	}
+}
+
+func formatNode(cursor *TreeCursor, indent int) string {
+	node := cursor.CurrentNode()
+	if !node.IsNamed() {
 		return ""
 	}
 
-	return node.Print()
+	n := strings.Repeat(" ", indent)
+	if field := cursor.CurrentFieldName(); field != "" {
+		n += fmt.Sprintf("%s: ", cursor.CurrentFieldName())
+	}
+
+	n += fmt.Sprintf("%s [%d,%d] - [%d,%d]", node.Type(), node.StartPoint().Row, node.StartPoint().Column, node.EndPoint().Row, node.EndPoint().Column)
+
+	if node.IsMissing() {
+		n += " - Missing"
+	}
+	if node.IsExtra() {
+		n += " - Extra"
+	}
+	if node.IsError() {
+		n += " - Error"
+	}
+	if node.HasChanges() {
+		n += " - Changed"
+	}
+	if node.HasError() {
+		n += " - HasError"
+	}
+
+	return n + "\n"
 }
 
 // Copy returns a new copy of a tree
@@ -501,38 +554,6 @@ func (n Node) String() string {
 	ptr := C.ts_node_string(n.c)
 	defer C.free(unsafe.Pointer(ptr))
 	return C.GoString(ptr)
-}
-
-func (n Node) Print() string {
-	return n.print(0)
-}
-
-func (n Node) print(indent int) string {
-	str := fmt.Sprintf("%s%s [%d,%d] - [%d,%d]", strings.Repeat("  ", indent), n.Type(), n.StartPoint().Row, n.StartPoint().Column, n.EndPoint().Row, n.EndPoint().Column)
-	if n.IsMissing() {
-		str += " - Missing"
-	}
-	if n.IsExtra() {
-		str += " - Extra"
-	}
-	if n.IsError() {
-		str += " - Error"
-	}
-	if n.HasChanges() {
-		str += " - Changed"
-	}
-	if n.HasError() {
-		str += " - HasError"
-	}
-	for i := range n.ChildCount() {
-		child := n.Child(i)
-		if !child.IsNamed() {
-			continue
-		}
-		str += "\n" + child.print(indent+1)
-	}
-
-	return str
 }
 
 // Equal checks if two nodes are identical.
