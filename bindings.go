@@ -333,7 +333,7 @@ func formatNode(cursor *TreeCursor, indent int) string {
 		n += fmt.Sprintf("%s: ", cursor.CurrentFieldName())
 	}
 
-	n += fmt.Sprintf("%s [%d,%d] - [%d,%d]", node.Type(), node.StartPoint().Row, node.StartPoint().Column, node.EndPoint().Row, node.EndPoint().Column)
+	n += fmt.Sprintf("%s [%d, %d] - [%d, %d]", node.Type(), node.StartPoint().Row, node.StartPoint().Column, node.EndPoint().Row, node.EndPoint().Column)
 
 	if node.IsMissing() {
 		n += " - Missing"
